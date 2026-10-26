@@ -1,0 +1,37 @@
+import matplotlib.pyplot as plt
+
+grades = ["F", "E", "D", "C", "B", "A", "S"]
+students = [3, 4, 5, 8, 9, 7, 4]
+total = sum(students)
+percent = [s / total * 100 for s in students]
+
+# Pie chart
+plt.figure(figsize=(7, 7))
+plt.pie(students, labels=grades, autopct="%1.1f%%", startangle=90)
+plt.title("Percentage Distribution of Students by Grade")
+plt.legend(grades, title="Grades", loc="center left", bbox_to_anchor=(1, 0.5))
+plt.tight_layout()
+plt.show()
+
+# Bar chart
+plt.figure(figsize=(8, 5))
+bars = plt.bar(grades, students, color="skyblue", label="Number of Students")
+for b in bars:
+    
+    plt.text(b.get_x() + b.get_width() / 2, b.get_height() + 0.1,
+             str(int(b.get_height())), ha="center", va="bottom")
+plt.xlabel("Grades")
+plt.ylabel("Number of Students")
+plt.title("Number of Students per Grade")
+plt.legend()
+plt.tight_layout()
+plt.show()
+
+# Max / Min
+mx, mn = max(students), min(students)
+print("Grade with maximum students:", grades[students.index(mx)], "(", mx, ")")
+print("Grade with minimum students:", grades[students.index(mn)], "(", mn, ")")
+
+# A + S percentage
+a_s = students[grades.index("A")] + students[grades.index("S")]
+print(f"Percentage of students with grades A and S combined: {a_s / total * 100:.2f}%")
