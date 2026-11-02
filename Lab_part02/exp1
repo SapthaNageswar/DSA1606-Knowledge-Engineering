@@ -1,0 +1,22 @@
+import itertools
+
+symbols = ['M', 'A', 'D', 'S']
+
+def kb(v):
+    r1 = (not (v['M'] and v['A'])) or v['S']
+    r2 = (not v['D']) or v['M']
+    return r1 and r2 and v['A'] and v['D']
+
+def entails(query):
+    ok = True
+    for vals in itertools.product([True, False], repeat=4):
+        v = dict(zip(symbols, vals))
+        k, q = kb(v), query(v)
+
+        if k and not q:
+            ok = False
+
+    return ok
+
+print("KB entails S?", entails(lambda v: v['S']))
+print("KB entails NOT S?", entails(lambda v: not v['S']))
