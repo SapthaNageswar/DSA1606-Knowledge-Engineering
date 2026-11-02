@@ -1,0 +1,49 @@
+# Competency questions for the Flood-Response ontology.
+# Run each query separately (they are separated by lines of ####).
+# In Protégé: Window > Tabs > SPARQL Query, or Gizmo/Snap SPARQL plugin.
+
+PREFIX : <http://example.org/floodresponse#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+#### CQ1: Which low-lying wards are at Orange or Red alert and have NO operational pump station inside them?
+SELECT ?ward ?alertLevel
+WHERE {
+  ?ward a :LowLyingWard ;
+        :hasAlertLevel ?alert .
+  ?alert :alertLevelCode ?code .
+  BIND(STRAFTER(STR(?alert), "#") AS ?alertLevel)
+  FILTER(?code >= 3)
+  FILTER NOT EXISTS {
+    ?ps a :PumpStation ;
+        :locatedIn ?ward ;
+        :isOperational true .
+  }
+}
+ORDER BY DESC(?code) ?ward
+
+#### CQ2: For every ward at Orange or Red alert, is the combined capacity of its designated relief camps enough for its population?
+SELECT ?ward ?population (SUM(?cap) AS ?campCapacity)
+       (IF(SUM(?cap) >= ?population, "adequate", "SHORTFALL") AS ?status)
+WHERE {
+  ?ward :hasAlertLevel ?alert ;
+        :hasPopulation ?population ;
+        :evacuatesTo ?camp .
+  ?alert :alertLevelCode ?code .
+  FILTER(?code >= 3)
+  ?camp :campCapacity ?cap .
+}
+GROUP BY ?ward ?population
+ORDER BY ?ward
+
+#### CQ3: Which hospitals lie in wards flooded by an event that a given rainfall event causes, directly or through a chain of causes, and which agency manages them?
+SELECT DISTINCT ?rain ?hospital ?ward ?agency
+WHERE {
+  ?rain a :RainfallEvent ;
+        :causes+ ?flood .
+  ?flood a :FloodEvent ;
+         :affects ?ward .
+  ?hospital a :Hospital ;
+            :locatedIn ?ward ;
+            :managedBy ?agency .
+}
+ORDER BY ?rain ?hospital

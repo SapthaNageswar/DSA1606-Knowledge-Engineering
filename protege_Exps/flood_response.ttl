@@ -1,0 +1,299 @@
+@prefix : <http://example.org/floodresponse#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<http://example.org/floodresponse> a owl:Ontology ;
+    rdfs:label "Flood-Response Knowledge Base for a Coastal City"@en ;
+    rdfs:comment "Ontology of wards, drainage infrastructure, relief facilities, hazards, alerts, resources and agencies for flood response in a coastal city. Rainfall alert thresholds are modelled on IMD 24-hour categories and should be replaced by the city's own SOP values."@en ;
+    owl:versionInfo "1.0" .
+
+#################################################################
+# 1. CLASS HIERARCHY  (25 domain concepts)
+#################################################################
+
+# --- Geographic Area ---
+:GeographicArea a owl:Class ; rdfs:label "Geographic Area"@en ; rdfs:comment "Any spatial unit of the city."@en .
+:Ward a owl:Class ; rdfs:subClassOf :GeographicArea ; rdfs:label "Ward"@en ; rdfs:comment "Administrative ward; the unit at which alerts, evacuation and pumping are managed."@en .
+:LowLyingWard a owl:Class ;
+    rdfs:subClassOf :Ward ;
+    owl:equivalentClass [ a owl:Class ; owl:intersectionOf (
+        :Ward
+        [ a owl:Restriction ; owl:onProperty :hasElevation ;
+          owl:someValuesFrom [ a rdfs:Datatype ; owl:onDatatype xsd:decimal ;
+              owl:withRestrictions ( [ xsd:maxExclusive "3.0"^^xsd:decimal ] ) ] ] ) ] ;
+    rdfs:label "Low-Lying Ward"@en ;
+    rdfs:comment "Ward whose mean elevation is below 3.0 m above mean sea level."@en .
+:HighGroundWard a owl:Class ;
+    rdfs:subClassOf :Ward ;
+    owl:equivalentClass [ a owl:Class ; owl:intersectionOf (
+        :Ward
+        [ a owl:Restriction ; owl:onProperty :hasElevation ;
+          owl:someValuesFrom [ a rdfs:Datatype ; owl:onDatatype xsd:decimal ;
+              owl:withRestrictions ( [ xsd:minInclusive "3.0"^^xsd:decimal ] ) ] ] ) ] ;
+    rdfs:label "High-Ground Ward"@en ;
+    rdfs:comment "Ward whose mean elevation is 3.0 m or more above mean sea level."@en .
+:WaterBody a owl:Class ; rdfs:subClassOf :GeographicArea ; rdfs:label "Water Body"@en ; rdfs:comment "River, canal or sea into which water drains."@en .
+
+# --- Infrastructure ---
+:Infrastructure a owl:Class ; rdfs:label "Infrastructure"@en .
+:PumpStation a owl:Class ; rdfs:subClassOf :Infrastructure ; rdfs:label "Pump Station"@en ; rdfs:comment "Drainage pumping station housing one or more fixed pumps."@en .
+:StormDrain a owl:Class ; rdfs:subClassOf :Infrastructure ; rdfs:label "Storm Drain"@en .
+:RainGauge a owl:Class ; rdfs:subClassOf :Infrastructure ; rdfs:label "Rain Gauge"@en ; rdfs:comment "Automatic rain gauge that feeds the alert system."@en .
+
+# --- Facility ---
+:Facility a owl:Class ; rdfs:label "Facility"@en .
+:ReliefCamp a owl:Class ; rdfs:subClassOf :Facility ; rdfs:label "Relief Camp"@en ; rdfs:comment "Shelter opened for evacuees."@en .
+:Hospital a owl:Class ; rdfs:subClassOf :Facility ; rdfs:label "Hospital"@en .
+
+# --- Hazard events ---
+:HazardEvent a owl:Class ; rdfs:label "Hazard Event"@en .
+:RainfallEvent a owl:Class ; rdfs:subClassOf :HazardEvent ; rdfs:label "Rainfall Event"@en .
+:HighTide a owl:Class ; rdfs:subClassOf :HazardEvent ; rdfs:label "High Tide"@en ; rdfs:comment "Tide high enough to block gravity outfalls."@en .
+:FloodEvent a owl:Class ; rdfs:subClassOf :HazardEvent ; rdfs:label "Flood Event"@en .
+
+# --- Alerts and orders ---
+:Alert a owl:Class ; rdfs:label "Alert"@en .
+:RainfallAlertLevel a owl:Class ; rdfs:subClassOf :Alert ; rdfs:label "Rainfall Alert Level"@en ; rdfs:comment "Green, Yellow, Orange or Red."@en .
+:EvacuationOrder a owl:Class ; rdfs:subClassOf :Alert ; rdfs:label "Evacuation Order"@en .
+
+# --- Resources ---
+:Resource a owl:Class ; rdfs:label "Resource"@en .
+:Pump a owl:Class ; rdfs:subClassOf :Resource ; rdfs:label "Pump"@en ; rdfs:comment "Fixed or portable pump. Portable pumps have isPortable = true."@en .
+:RescueBoat a owl:Class ; rdfs:subClassOf :Resource ; rdfs:label "Rescue Boat"@en .
+
+# --- Actors ---
+:Actor a owl:Class ; rdfs:label "Actor"@en .
+:Agency a owl:Class ; rdfs:subClassOf :Actor ; rdfs:label "Agency"@en .
+:RescueTeam a owl:Class ; rdfs:subClassOf :Actor ; rdfs:label "Rescue Team"@en .
+
+# --- Disjointness ---
+[] a owl:AllDisjointClasses ; owl:members ( :GeographicArea :Infrastructure :Facility :HazardEvent :Alert :Resource :Actor ) .
+[] a owl:AllDisjointClasses ; owl:members ( :RainfallEvent :HighTide :FloodEvent ) .
+[] a owl:AllDisjointClasses ; owl:members ( :RainfallAlertLevel :EvacuationOrder ) .
+:LowLyingWard owl:disjointWith :HighGroundWard .
+
+# --- Structural restrictions ---
+:PumpStation rdfs:subClassOf [ a owl:Restriction ; owl:onProperty :locatedIn ; owl:someValuesFrom :Ward ] .
+:ReliefCamp rdfs:subClassOf [ a owl:Restriction ; owl:onProperty :locatedIn ; owl:someValuesFrom :Ward ] .
+:Hospital rdfs:subClassOf [ a owl:Restriction ; owl:onProperty :managedBy ; owl:someValuesFrom :Agency ] .
+
+#################################################################
+# 2. OBJECT PROPERTIES
+#################################################################
+
+:locatedIn a owl:ObjectProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( :Facility :Infrastructure ) ] ;
+    rdfs:range :Ward ; rdfs:label "located in"@en .
+
+:adjacentTo a owl:ObjectProperty , owl:SymmetricProperty ;
+    rdfs:domain :Ward ; rdfs:range :Ward ; rdfs:label "adjacent to"@en .
+
+:dischargesTo a owl:ObjectProperty ;
+    rdfs:domain :PumpStation ; rdfs:range :WaterBody ; rdfs:label "discharges to"@en .
+
+:isPartOf a owl:ObjectProperty ;
+    rdfs:domain :Pump ; rdfs:range :PumpStation ; owl:inverseOf :hasPart ; rdfs:label "is part of"@en .
+:hasPart a owl:ObjectProperty ;
+    rdfs:domain :PumpStation ; rdfs:range :Pump ; rdfs:label "has part"@en .
+
+:causes a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:domain :HazardEvent ; rdfs:range :HazardEvent ; rdfs:label "causes"@en ;
+    rdfs:comment "Causal link between hazards; transitive so a root cause reaches all downstream events."@en .
+
+:triggersAlert a owl:ObjectProperty ;
+    rdfs:domain :RainfallEvent ; rdfs:range :RainfallAlertLevel ; rdfs:label "triggers alert"@en .
+
+:affects a owl:ObjectProperty ;
+    rdfs:domain :FloodEvent ; rdfs:range :Ward ; owl:inverseOf :isAffectedBy ; rdfs:label "affects"@en .
+:isAffectedBy a owl:ObjectProperty ;
+    rdfs:domain :Ward ; rdfs:range :FloodEvent ; rdfs:label "is affected by"@en .
+
+:hasAlertLevel a owl:ObjectProperty , owl:FunctionalProperty ;
+    rdfs:domain :Ward ; rdfs:range :RainfallAlertLevel ; rdfs:label "has alert level"@en .
+
+:deployedTo a owl:ObjectProperty ;
+    rdfs:domain :Resource ; rdfs:range :Ward ; rdfs:label "deployed to"@en .
+
+:operatesIn a owl:ObjectProperty ;
+    rdfs:domain :RescueTeam ; rdfs:range :Ward ; rdfs:label "operates in"@en .
+
+:issuedFor a owl:ObjectProperty ;
+    rdfs:domain :EvacuationOrder ; rdfs:range :Ward ; rdfs:label "issued for"@en .
+
+:evacuatesTo a owl:ObjectProperty ;
+    rdfs:domain :Ward ; rdfs:range :ReliefCamp ; owl:inverseOf :shelters ; rdfs:label "evacuates to"@en .
+:shelters a owl:ObjectProperty ;
+    rdfs:domain :ReliefCamp ; rdfs:range :Ward ; rdfs:label "shelters"@en .
+
+:managedBy a owl:ObjectProperty ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( :PumpStation :ReliefCamp :Hospital ) ] ;
+    rdfs:range :Agency ; rdfs:label "managed by"@en .
+
+:monitors a owl:ObjectProperty ;
+    rdfs:domain :RainGauge ; rdfs:range :Ward ; rdfs:label "monitors"@en .
+
+#################################################################
+# 3. DATA PROPERTIES
+#################################################################
+
+:hasElevation a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :Ward ; rdfs:range xsd:decimal ; rdfs:label "has elevation (m above MSL)"@en .
+:hasPopulation a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :Ward ; rdfs:range xsd:integer ; rdfs:label "has population"@en .
+:pumpCapacity a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :Pump ; rdfs:range xsd:decimal ; rdfs:label "pump capacity (m3 per minute)"@en .
+:isPortable a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :Pump ; rdfs:range xsd:boolean ; rdfs:label "is portable"@en .
+:isOperational a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :PumpStation ; rdfs:range xsd:boolean ; rdfs:label "is operational"@en .
+:campCapacity a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :ReliefCamp ; rdfs:range xsd:integer ; rdfs:label "camp capacity (persons)"@en .
+:rainfallMm24h a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :RainfallEvent ; rdfs:range xsd:decimal ; rdfs:label "rainfall in 24 h (mm)"@en .
+:floodDepthCm a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :FloodEvent ; rdfs:range xsd:decimal ; rdfs:label "flood depth (cm)"@en .
+:alertLevelCode a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:domain :RainfallAlertLevel ; rdfs:range xsd:integer ; rdfs:label "alert level code (1 Green .. 4 Red)"@en .
+
+#################################################################
+# 4. RULE ENCODINGS IN DESCRIPTION LOGIC (defined classes)
+#    Run a reasoner (HermiT) in Protege to classify individuals.
+#################################################################
+
+# R6  LowLyingWard AND hasAlertLevel value Red  =>  mandatory evacuation
+:EvacuationRequiredWard a owl:Class ;
+    rdfs:label "Evacuation Required Ward (rule R6)"@en ;
+    rdfs:subClassOf :Ward ;
+    owl:equivalentClass [ a owl:Class ; owl:intersectionOf (
+        :LowLyingWard
+        [ a owl:Restriction ; owl:onProperty :hasAlertLevel ; owl:hasValue :Alert_Red ] ) ] .
+
+# R10 PumpStation AND not operational AND located in a ward at Orange/Red  =>  needs backup pump
+:PumpStationNeedingBackup a owl:Class ;
+    rdfs:label "Pump Station Needing Backup (rule R10)"@en ;
+    rdfs:subClassOf :PumpStation ;
+    owl:equivalentClass [ a owl:Class ; owl:intersectionOf (
+        :PumpStation
+        [ a owl:Restriction ; owl:onProperty :isOperational ; owl:hasValue false ]
+        [ a owl:Restriction ; owl:onProperty :locatedIn ;
+          owl:someValuesFrom [ a owl:Restriction ; owl:onProperty :hasAlertLevel ;
+              owl:someValuesFrom [ a owl:Class ; owl:oneOf ( :Alert_Orange :Alert_Red ) ] ] ] ) ] .
+
+# R5  Ward at Orange AND affected by flood of depth >= 30 cm  =>  escalate to Red
+:RedEscalationWard a owl:Class ;
+    rdfs:label "Red Escalation Ward (rule R5)"@en ;
+    rdfs:subClassOf :Ward ;
+    owl:equivalentClass [ a owl:Class ; owl:intersectionOf (
+        :Ward
+        [ a owl:Restriction ; owl:onProperty :hasAlertLevel ; owl:hasValue :Alert_Orange ]
+        [ a owl:Restriction ; owl:onProperty :isAffectedBy ;
+          owl:someValuesFrom [ a owl:Class ; owl:intersectionOf (
+              :FloodEvent
+              [ a owl:Restriction ; owl:onProperty :floodDepthCm ;
+                owl:someValuesFrom [ a rdfs:Datatype ; owl:onDatatype xsd:decimal ;
+                    owl:withRestrictions ( [ xsd:minInclusive "30.0"^^xsd:decimal ] ) ] ] ) ] ] ) ] .
+
+#################################################################
+# 5. INDIVIDUALS  (55)
+#################################################################
+
+# --- Alert levels (4) ---
+:Alert_Green  a :RainfallAlertLevel ; :alertLevelCode 1 .
+:Alert_Yellow a :RainfallAlertLevel ; :alertLevelCode 2 .
+:Alert_Orange a :RainfallAlertLevel ; :alertLevelCode 3 .
+:Alert_Red    a :RainfallAlertLevel ; :alertLevelCode 4 .
+[] a owl:AllDifferent ; owl:distinctMembers ( :Alert_Green :Alert_Yellow :Alert_Orange :Alert_Red ) .
+
+# --- Agencies (4) ---
+:Ag_Municipal a :Agency ; rdfs:label "Marina City Corporation"@en .
+:Ag_DDMA      a :Agency ; rdfs:label "District Disaster Management Authority"@en .
+:Ag_Fire      a :Agency ; rdfs:label "Fire and Rescue Services"@en .
+:Ag_Health    a :Agency ; rdfs:label "Health Department"@en .
+
+# --- Wards (8) ---
+:W_Marina a :LowLyingWard ; :hasElevation 1.2 ; :hasPopulation 52000 ; :hasAlertLevel :Alert_Red ;
+    :adjacentTo :W_Harbour , :W_Lagoon , :W_Central ;
+    :evacuatesTo :RC_CentralSchool , :RC_StadiumCamp .
+:W_Harbour a :LowLyingWard ; :hasElevation 0.8 ; :hasPopulation 38000 ; :hasAlertLevel :Alert_Orange ;
+    :adjacentTo :W_Marina , :W_CoveEnd , :W_OldTown ;
+    :evacuatesTo :RC_StadiumCamp , :RC_HillcrestHall .
+:W_CoveEnd a :LowLyingWard ; :hasElevation 0.5 ; :hasPopulation 21000 ; :hasAlertLevel :Alert_Orange ;
+    :adjacentTo :W_Harbour ;
+    :evacuatesTo :RC_CantonmentGround .
+:W_Lagoon a :LowLyingWard ; :hasElevation 1.0 ; :hasPopulation 44000 ; :hasAlertLevel :Alert_Yellow ;
+    :adjacentTo :W_Marina , :W_OldTown ;
+    :evacuatesTo :RC_CentralSchool .
+:W_OldTown a :LowLyingWard ; :hasElevation 2.4 ; :hasPopulation 36000 ; :hasAlertLevel :Alert_Yellow ;
+    :adjacentTo :W_Lagoon , :W_Harbour , :W_Central ;
+    :evacuatesTo :RC_CentralSchool .
+:W_Central a :HighGroundWard ; :hasElevation 8.5 ; :hasPopulation 61000 ; :hasAlertLevel :Alert_Green ;
+    :adjacentTo :W_Marina , :W_OldTown , :W_Hillcrest , :W_Cantonment .
+:W_Hillcrest a :HighGroundWard ; :hasElevation 14.0 ; :hasPopulation 33000 ; :hasAlertLevel :Alert_Green ;
+    :adjacentTo :W_Central .
+:W_Cantonment a :HighGroundWard ; :hasElevation 11.2 ; :hasPopulation 27000 ; :hasAlertLevel :Alert_Green ;
+    :adjacentTo :W_Central .
+
+# --- Water bodies (3) ---
+:Bay_Sea        a :WaterBody .
+:Crescent_River a :WaterBody .
+:Salt_Canal     a :WaterBody .
+
+# --- Pump stations (4) ---
+:PS_Marina  a :PumpStation ; :locatedIn :W_Marina  ; :isOperational true  ; :dischargesTo :Salt_Canal     ; :managedBy :Ag_Municipal .
+:PS_Harbour a :PumpStation ; :locatedIn :W_Harbour ; :isOperational false ; :dischargesTo :Bay_Sea        ; :managedBy :Ag_Municipal .
+:PS_Lagoon  a :PumpStation ; :locatedIn :W_Lagoon  ; :isOperational true  ; :dischargesTo :Crescent_River ; :managedBy :Ag_Municipal .
+:PS_OldTown a :PumpStation ; :locatedIn :W_OldTown ; :isOperational true  ; :dischargesTo :Salt_Canal     ; :managedBy :Ag_Municipal .
+
+# --- Pumps (8) ---
+:Pump_Marina_1   a :Pump ; :isPartOf :PS_Marina  ; :pumpCapacity 120.0 ; :isPortable false .
+:Pump_Marina_2   a :Pump ; :isPartOf :PS_Marina  ; :pumpCapacity 120.0 ; :isPortable false .
+:Pump_Harbour_1  a :Pump ; :isPartOf :PS_Harbour ; :pumpCapacity 90.0  ; :isPortable false .
+:Pump_Lagoon_1   a :Pump ; :isPartOf :PS_Lagoon  ; :pumpCapacity 80.0  ; :isPortable false .
+:Pump_OldTown_1  a :Pump ; :isPartOf :PS_OldTown ; :pumpCapacity 70.0  ; :isPortable false .
+:Pump_Portable_1 a :Pump ; :pumpCapacity 20.0 ; :isPortable true ; :deployedTo :W_Marina .
+:Pump_Portable_2 a :Pump ; :pumpCapacity 20.0 ; :isPortable true .
+:Pump_Portable_3 a :Pump ; :pumpCapacity 20.0 ; :isPortable true .
+
+# --- Storm drains (2) ---
+:SD_Marina  a :StormDrain ; :locatedIn :W_Marina .
+:SD_Harbour a :StormDrain ; :locatedIn :W_Harbour .
+
+# --- Rain gauges (3) ---
+:RG_Marina   a :RainGauge ; :locatedIn :W_Marina   ; :monitors :W_Marina .
+:RG_Central  a :RainGauge ; :locatedIn :W_Central  ; :monitors :W_Central .
+:RG_Hillcrest a :RainGauge ; :locatedIn :W_Hillcrest ; :monitors :W_Hillcrest .
+
+# --- Relief camps (4) ---
+:RC_CentralSchool     a :ReliefCamp ; :locatedIn :W_Central    ; :campCapacity 6000  ; :managedBy :Ag_DDMA .
+:RC_HillcrestHall     a :ReliefCamp ; :locatedIn :W_Hillcrest  ; :campCapacity 4000  ; :managedBy :Ag_DDMA .
+:RC_CantonmentGround  a :ReliefCamp ; :locatedIn :W_Cantonment ; :campCapacity 25000 ; :managedBy :Ag_DDMA .
+:RC_StadiumCamp       a :ReliefCamp ; :locatedIn :W_Central    ; :campCapacity 20000 ; :managedBy :Ag_Municipal .
+
+# --- Hospitals (3) ---
+:H_Marina     a :Hospital ; :locatedIn :W_Marina  ; :managedBy :Ag_Health .
+:H_PortHealth a :Hospital ; :locatedIn :W_Harbour ; :managedBy :Ag_Municipal .
+:H_General    a :Hospital ; :locatedIn :W_Central ; :managedBy :Ag_Health .
+
+# --- Hazard events (5) ---
+:Rain_Oct2026 a :RainfallEvent ; :rainfallMm24h 240.5 ; :triggersAlert :Alert_Red ;
+    :causes :Flood_Marina_Oct2026 .
+:Rain_Aug2025 a :RainfallEvent ; :rainfallMm24h 95.0 ; :triggersAlert :Alert_Yellow .
+:Tide_Oct2026 a :HighTide ; :causes :Flood_Harbour_Oct2026 .
+:Flood_Marina_Oct2026 a :FloodEvent ; :floodDepthCm 85.0 ; :affects :W_Marina ;
+    :causes :Flood_Harbour_Oct2026 .
+:Flood_Harbour_Oct2026 a :FloodEvent ; :floodDepthCm 35.0 ; :affects :W_Harbour , :W_CoveEnd .
+
+# --- Evacuation orders (2) ---
+:Evac_Marina_01  a :EvacuationOrder ; :issuedFor :W_Marina .
+:Evac_CoveEnd_01 a :EvacuationOrder ; :issuedFor :W_CoveEnd .
+
+# --- Rescue boats (2) ---
+:Boat_Rescue_1 a :RescueBoat ; :deployedTo :W_Marina .
+:Boat_Rescue_2 a :RescueBoat .
+
+# --- Rescue teams (3) ---
+:Team_Alpha   a :RescueTeam ; :operatesIn :W_Marina .
+:Team_Bravo   a :RescueTeam ; :operatesIn :W_Harbour .
+:Team_Charlie a :RescueTeam .
