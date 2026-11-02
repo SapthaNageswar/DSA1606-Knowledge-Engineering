@@ -1,0 +1,49 @@
+students = ['Arun', 'Bala', 'Chitra', 'Divya']
+
+enrolled = {
+    'Arun': {'KE', 'DS'},
+    'Bala': {'KE'},
+    'Chitra': {'DS'},
+    'Divya': {'KE', 'DS'}
+}
+
+attends = {'Arun', 'Bala', 'Divya'}
+
+ds_marks = {
+    'Arun': 92,
+    'Chitra': 78,
+    'Divya': 85
+}
+
+S1 = all(
+    ('KE' not in enrolled[x]) or (x in attends)
+    for x in students
+)
+
+S2 = any(
+    'DS' in enrolled[x] and ds_marks.get(x, 0) >= 90
+    for x in students
+)
+
+S3 = all(
+    len(enrolled[x]) > 0
+    for x in students
+)
+
+S4 = not any(
+    'KE' in enrolled[x] and x not in attends
+    for x in students
+)
+
+S5 = all(
+    ds_marks.get(x, 0) >= 80
+    for x in students if 'DS' in enrolled[x]
+)
+
+print("S1:", S1)
+print("S2:", S2)
+print("S3:", S3)
+print("S4:", S4)
+print("S5:", S5)
+
+print("Quantifier duality:", S1 == S4)
