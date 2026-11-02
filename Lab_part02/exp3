@@ -1,0 +1,52 @@
+def is_var(x):
+    return isinstance(x, str) and x[0].isupper()
+
+def unify(x, y, s):
+    if s is None:
+        return None
+
+    if x == y:
+        return s
+
+    if is_var(x):
+        return unify_var(x, y, s)
+
+    if is_var(y):
+        return unify_var(y, x, s)
+
+    if isinstance(x, tuple) and isinstance(y, tuple):
+        if len(x) == len(y):
+            for a, b in zip(x, y):
+                s = unify(a, b, s)
+            return s
+
+    return None
+
+def unify_var(v, t, s):
+    if v in s:
+        return unify(s[v], t, s)
+
+    if is_var(t) and t in s:
+        return unify(v, s[t], s)
+
+    return {**s, v: t}
+
+tests = [
+    (('enrolled', 'S', 'ds101'),
+     ('enrolled', 'alice', 'ds101')),
+
+    (('teaches', 'P', 'C'),
+     ('teaches', 'rao', 'ke201')),
+
+    (('teaches', 'rao', 'C'),
+     ('teaches', 'kumar', 'ke201')),
+
+    (('advisor', 'X', ('dept', 'Y')),
+     ('advisor', 'meena', ('dept', 'cse'))),
+
+    (('f', 'X', 'Y'),
+     ('f', 'Y', 'a'))
+]
+
+for a, b in tests:
+    print(unify(a, b, {}))
