@@ -1,0 +1,31 @@
+rules = [
+    ('Power', 'RouterOn'),
+    ('RouterOn', 'WifiOn'),
+    ('WifiOn', 'InternetOK')
+]
+
+def infer(known):
+    changed = True
+
+    while changed:
+        changed = False
+
+        for a, c in rules:
+
+            if known.get(a) is True and c not in known:
+                known[c] = True
+                changed = True
+                print("Modus Ponens:", c, "= True")
+
+            if known.get(c) is False and a not in known:
+                known[a] = False
+                changed = True
+                print("Modus Tollens:", a, "= False")
+
+    return known
+
+print("Case A:")
+print(infer({'Power': True}))
+
+print("\nCase B:")
+print(infer({'InternetOK': False}))
